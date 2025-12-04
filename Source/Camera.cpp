@@ -11,8 +11,8 @@ void Camera::SetView(const glm::vec3& eye, const glm::vec3& target, const glm::v
 	CalculateViewPlane();
 }
 
-Ray Camera::GetRay(const glm::vec2& uv) const {
-	Ray ray;
+ray_t Camera::GetRay(const glm::vec2& uv) const {
+	ray_t ray;
 
 	ray.origin = eye;
 	ray.direction = glm::normalize(lowerLeft + uv.x * horizontal + uv.y * vertical - eye); //point from eye to the view location
