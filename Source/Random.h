@@ -92,6 +92,14 @@
         return getReal(static_cast<T>(0), static_cast<T>(max));
     }
 
+    inline glm::vec3 getReal(const glm::vec3 min, const glm::vec3 max) {
+        return glm::vec3{
+            getReal(min.x, max.x),
+            getReal(min.y, max.y),
+            getReal(min.z, max.z)
+        };
+    }
+
     /// <summary>
     /// Generates a random real number in the range [0, 1).
     /// This is the standard unit interval commonly used for probability calculations,

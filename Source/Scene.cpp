@@ -4,24 +4,33 @@
 #include "Color.h"
 #include "Ray.h"
 #include "Object.h"
+#include "Random.h"
 #include <iostream>
 
-void Scene::Render(Framebuffer& framebuffer, const Camera& camera) {
+void Scene::Render(Framebuffer& framebuffer, const Camera& camera, int numSamples) {
 	// trace ray for every framebuffer pixel
 	for (int y = 0; y < framebuffer.height; y++) {
-		for (int x = 0; x < framebuffer.width; x++)	{
-			// set pixel (x,y) coordinates)
-			glm::vec2 pixel{ x, y };
-			// normalize (0 <-> 1) the pixel value (pixel / vec2{ framebuffer.width, framebuffer.height }
-			glm::vec2 point = pixel / glm::vec2{ framebuffer.width, framebuffer.height };
-			// flip the y value (bottom = 0, top = 1)
-			point.y = 1 - point.y;
+		for (int x = 0; x < framebuffer.width; x++) {
+			// color will be accumulated with ray trace samples
+			color3_t color{ 0 };
+			// multi-sample for each pixel
+			for (int i = 0; i < numSamples; i++) {
+				// set pixel (x,y) coordinates)
+				glm::vec2 pixel{ x, y };
+				// add random value (0-1) to pixel valie, each sample should be a little different
+				pixel += glm::vec2{ getReal(), getReal() };
+				// normalize (0 <-> 1) the pixel value (pixel / vec2{ framebuffer.width, framebuffer.height }
+				glm::vec2 point = pixel / glm::vec2{ framebuffer.width, framebuffer.height };
+				// flip the y value (bottom = 0, top = 1)
+				point.y = 1 - point.y;
 
-			// get ray from camera
-			ray_t ray = camera.GetRay(point);
-			// 0 = min ray distance, 100 = max ray distance
-			color3_t color = Trace(ray, 0, 100);
-
+				// get ray from camera
+				ray_t ray = camera.GetRay(point);
+				// trace ray
+				color += Trace(ray, 0, 100);
+			}
+			// get average color = (color / number samples)
+			color = color / static_cast<float>(numSamples);
 			framebuffer.DrawPoint(x, y, ColorConvert(color));
 		}
 	}
@@ -34,7 +43,8 @@ void Scene::AddObject(std::unique_ptr<Object> object) {
 }
 
 
-color3_t Scene::Trace(const ray_t& ray, float minDistance, float maxDistance) {
+color3_t Scene::Trace(const ray_t& ray, float minDistance, float maxDistance, int maxDepth) {
+	if (maxDepth < 1) return { 0,0,0 };
 
 	bool rayHit = false;
 	float closestDistance = maxDistance;
@@ -52,12 +62,17 @@ color3_t Scene::Trace(const ray_t& ray, float minDistance, float maxDistance) {
 	}
 
 	// check if ray hit object
-	if (rayHit)	{
-		// get material color of hit object
-		//color3_t color = raycastHit.color;
-		//color3_t color = raycastHit.normal;
-		color3_t color = glm::vec3{ raycastHit.distance * 0.1f };
-		return color;
+	if (rayHit) {
+		color3_t attenuation;
+		ray_t scattered;
+		// get raycast hit matereial, get material color and scattered ray 
+		if (raycastHit.material->Scatter(ray, raycastHit, attenuation, scattered)) {
+			// trace scattered ray, final color will be the product of all the material colors
+			return attenuation * Trace(scattered, minDistance, maxDistance, maxDepth-1);
+		}
+		else {
+			return raycastHit.material->GetEmissive();
+		}
 	}
 	
 

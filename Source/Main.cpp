@@ -28,15 +28,18 @@ int main() {
 
 	scene.SetSky({ 0.5f, 0.7f, 1.0f }, { 1.0f, 1.0f, 1.0f });
 
-	for (int i = 0; i < 5; i++) {
-		glm::vec3 position = glm::vec3{
-			getReal(-3.0f, 3.0f),
-			getReal(-2.0f, 2.0f),
-			getReal(-1.0f, 1.0f)
-		};
-		
-		std::unique_ptr<Sphere> sphere = std::make_unique<Sphere>(Sphere(position, 0.5f, getRealVec3({ 0,0,0 }, { 1,1,1 })));
+	auto red = std::make_shared<Lambertian>(color3_t{ 1.0f, 0.0f, 0.0f });
+	auto green = std::make_shared<Lambertian>(color3_t{ 0.0f, 1.0f, 0.0f });
+	auto blue = std::make_shared<Lambertian>(color3_t{ 0.0f, 0.0f, 1.0f });
+	auto light = std::make_shared<Emissive>(color3_t{ 1.0f, 1.0f, 1.0f }, 3.0f);
+	auto metal = std::make_shared<Metal>(color3_t{ 1.0f, 1.0f, 1.0f }, 0.0f);
+	//<array of materials> = { red, green, blue, light, metal };
+	std::vector<std::shared_ptr<Material>> materials = { red, green, blue, light, metal };
 
+	for (int i = 0; i < 15; i++) {
+		glm::vec3 position = getReal(glm::vec3{ -3.0f }, glm::vec3{ 3.0f });
+
+		std::unique_ptr<Object> sphere = std::make_unique<Sphere>(Transform{ position }, getReal(0.2f, 1.0f), materials[getInt(0,4)]);
 		scene.AddObject(std::move(sphere));
 	}
 
@@ -59,7 +62,7 @@ int main() {
 		// draw to frame buffer
 		framebuffer.Clear({ 0, 0, 0, 255 });
 		
-		scene.Render(framebuffer, camera);
+		scene.Render(framebuffer, camera, 50);
 
 		// update frame buffer, copy buffer pixels to texture
 		framebuffer.Update();
