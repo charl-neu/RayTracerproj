@@ -4,6 +4,7 @@
 #include "Scene.h"
 #include "Sphere.h"
 #include "Random.h"
+#include "Plane.h"
 #include <memory>
 
 #include <iostream>
@@ -19,29 +20,36 @@ int main() {
 
 	Framebuffer framebuffer(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-	float aspectRatio = static_cast<float>(SCREEN_WIDTH) / static_cast<float>(SCREEN_HEIGHT);
+	// place camera in scene
+	float aspectRatio = framebuffer.width / (float)framebuffer.height;
 	Camera camera(70.0f, aspectRatio);
-	camera.SetView({ 0,0,5 }, { 0,0,0 });
+	// camera eye is above plane
+	camera.SetView({ 0, 2, 5 }, { 0, 0, 0 });
 
 	Scene scene;
 
-
-	scene.SetSky({ 0.5f, 0.7f, 1.0f }, { 1.0f, 1.0f, 1.0f });
-
+	// create materials
 	auto red = std::make_shared<Lambertian>(color3_t{ 1.0f, 0.0f, 0.0f });
 	auto green = std::make_shared<Lambertian>(color3_t{ 0.0f, 1.0f, 0.0f });
 	auto blue = std::make_shared<Lambertian>(color3_t{ 0.0f, 0.0f, 1.0f });
-	auto light = std::make_shared<Emissive>(color3_t{ 1.0f, 1.0f, 1.0f }, 3.0f);
+	auto light = std::make_shared<Emissive>(color3_t{ 1.0f, 1.0f, 1.0f }, 10.0f);
 	auto metal = std::make_shared<Metal>(color3_t{ 1.0f, 1.0f, 1.0f }, 0.0f);
-	//<array of materials> = { red, green, blue, light, metal };
-	std::vector<std::shared_ptr<Material>> materials = { red, green, blue, light, metal };
+	std::shared_ptr<Material> materials[] = { red, green, blue, metal };
 
+	// place random spheres in the scene with different materials
 	for (int i = 0; i < 15; i++) {
-		glm::vec3 position = getReal(glm::vec3{ -3.0f }, glm::vec3{ 3.0f });
+		// randomize mize size and position, place spheres on plane
+		float radius = getReal(0.2f, 0.5f);
+		glm::vec3 position = getReal(glm::vec3{ -3.0f, radius, -3.0f }, glm::vec3{ 3.0f, radius, 3.0f });
 
-		std::unique_ptr<Object> sphere = std::make_unique<Sphere>(Transform{ position }, getReal(0.2f, 1.0f), materials[getInt(0,4)]);
+		std::unique_ptr<Object> sphere = std::make_unique<Sphere>(Transform{ position }, radius, materials[getInt(4)]);
 		scene.AddObject(std::move(sphere));
 	}
+
+	// place plane in scene with gray material
+	auto gray = std::make_shared<Lambertian>(color3_t{ 0.2f, 0.2f, 0.2f });
+	std::unique_ptr<Plane> plane = std::make_unique<Plane>(Transform{ glm::vec3{ 0.0f, 0.0f, 0.0f } }, gray);
+	scene.AddObject(std::move(plane));
 
 
 	SDL_Event event;
