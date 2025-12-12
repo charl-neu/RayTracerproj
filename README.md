@@ -74,6 +74,11 @@ faces until max depth is reached.
 
 ---
 
+## **Visual Showcase**
+
+![Scene example](exampleray.png)
+---
+
 ## **Attribution**
 
 This project uses the following open-source libraries:
